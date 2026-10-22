@@ -14,7 +14,7 @@ struct ContentView: View {
                 Text("Hello, iPhone!")
                     .font(.largeTitle.bold())
                     .accessibilityIdentifier("welcomeTitle")
-                Text("iPhone AI App Factory")
+                Text("iPhone AI App Factory · 更新驗證")
                     .font(.headline)
                 Text("\(counter.count)")
                     .font(.system(size: 64, weight: .bold, design: .rounded))
