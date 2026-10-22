@@ -2,7 +2,7 @@
 
 Windows 上由 Codex 維護原生 SwiftUI App；GitHub Actions 標準 macOS runner 執行 iOS 測試與未簽署 IPA 建置，之後在 Windows 做本機簽署及實機驗收。已驗證的安裝路徑為 iLoader 2.4.0；原定 Sideloadly 0.71.1 的 Local/Fake 登入均遇到 -80046，保留失敗紀錄。
 
-首次端到端 MVP 與覆蓋更新已驗證：兩版各 3 個單元測試與 1 個 UI 測試通過；本人確認 1.0.0 可操作且關閉重開保留計數，正確匯入 1.0.1 後版號正確、計數 4 保留。新版關閉重開的獨立確認、自動化選檔及到期續簽仍待驗證。本機不需要 Xcode 或 iOS Simulator。
+首次端到端 MVP 與覆蓋更新已驗證：兩版各 3 個單元測試與 1 個 UI 測試通過；本人確認 1.0.0 可操作且關閉重開保留計數，正確匯入 1.0.1 後版號正確、計數 4 保留，關閉重開仍為 4。自動化選檔及到期續簽仍待驗證。本機不需要 Xcode 或 iOS Simulator。
 
 ## 第一個 App
 
@@ -18,7 +18,9 @@ Windows 上由 Codex 維護原生 SwiftUI App；GitHub Actions 標準 macOS runn
 
 首次成功證據：[run 39760776675](https://github.com/Jupiter705/iphone-ai-app-factory/actions/runs/39760776675)，來源 `bc89451aec78c004ac00ceefd15867dd3f7c11ad`。已驗證組合為 Xcode 16.4 (16F6)、XcodeGen 2.46.0、macos15 image 20260907.0337.1、iPhone 16 iOS 18.5 Simulator。共 4 項測試 PASS，0 failed／skipped；UI 測試包括點擊、重開保存與橫向操作。
 
-產物 `FactoryHello-1.0.0-1-unsigned.ipa`；SHA-256 `c54abb3682e9c09d8eaefad8d76e14e47bbdd58bf8012182e869acd4d36ca4e0`。Windows 端已核對 checksum、來源、Payload、Info.plist、版號與 Mach-O iOS device arm64。首次 workflow 無需修正即成功；尚未進行故意破壞編譯的修復回歸測試。Actions 提示舊 Node 20 action 在 runner 上改以 Node 24 執行，本次已成功；後續更新 actions 時須另做回歸。
+產物 `FactoryHello-1.0.0-1-unsigned.ipa`；SHA-256 `c54abb3682e9c09d8eaefad8d76e14e47bbdd58bf8012182e869acd4d36ca4e0`。Windows 端已核對 checksum、來源、Payload、Info.plist、版號與 Mach-O iOS device arm64。首次 workflow 無需修正即成功。Actions 提示舊 Node 20 action 在 runner 上改以 Node 24 執行，本次已成功；後續更新 actions 時須另做回歸。
+
+編譯錯誤修復演練已在隔離分支完成：[失敗 run 39839845427](https://github.com/Jupiter705/iphone-ai-app-factory/actions/runs/39839845427) 保存故意加入的 Swift 編譯錯誤，Swift 測試未執行且未產出 IPA；移除演練錯誤後，[修復 run 39840305545](https://github.com/Jupiter705/iphone-ai-app-factory/actions/runs/39840305545)（來源 `f117ab820cd963dbb1f21ef2bb8e5d1091cdd5f7`）編譯、3 unit + 1 UI 全數通過，IPA 下載校驗通過。修復 1/5 輪；演練程式未合併主線，演練 IPA 未安裝手機。
 
 Windows 的專案專用 gh：`.tools/gh/bin/gh.exe`。以 `scripts/github.ps1` 呼叫，使用忽略的 `local-output/gh-config`；帳號授權由本人在 GitHub 官方瀏覽器頁完成。工具不修改全域 PATH 或 Git 設定。
 

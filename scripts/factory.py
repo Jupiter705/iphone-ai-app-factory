@@ -163,7 +163,8 @@ def fetch(state, run_id, commit, version):
     test_log = (evidence / "test.log").read_text(encoding="utf-8", errors="replace")
     for suite in ("CounterStoreTests", "FactoryHelloUITests"):
         verifier.require(f"Test Suite '{suite}' passed" in test_log, f"Suite not passed: {suite}")
-    transition(state, "TEST_PASSED", run_id=str(run_id), commit_sha=commit, version=version)
+    transition(state, "TEST_PASSED", run_id=str(run_id), commit_sha=commit, version=version,
+               conclusion=info["conclusion"])
     artifact = directory / f"unsigned-ipa-{run_id}-{attempt}"
     download(run_id, artifact.name, artifact, "manifest.json")
     result = verifier.verify(artifact, commit, run_id, version, REPOSITORY, attempt)

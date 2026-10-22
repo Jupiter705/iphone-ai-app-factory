@@ -2,6 +2,7 @@
 import contextlib
 import importlib.util
 import io
+import json
 import tempfile
 import unittest
 from pathlib import Path
@@ -46,6 +47,32 @@ class FactorySafetyTests(unittest.TestCase):
     def test_install_preparation_requires_verified_ipa(self):
         with self.assertRaisesRegex(ValueError, "Verified IPA"):
             factory.prepare_install({"phase": "FAILED"}, False)
+
+    def test_successful_repair_replaces_current_failure_but_keeps_history(self):
+        info = {"headSha": "a" * 40, "workflowName": "iOS build", "status": "completed",
+                "attempt": 1, "url": "https://example.invalid/run/42"}
+        with tempfile.TemporaryDirectory() as directory, \
+                patch.object(factory, "OUTPUT", Path(directory)), \
+                patch.object(factory, "run_info", side_effect=[dict(info, conclusion="failure"),
+                                                              dict(info, conclusion="success")]), \
+                patch.object(factory, "gh", return_value="test log"), \
+                patch.object(factory, "download"), \
+                patch.object(factory.verifier, "verify", return_value={"validation": "PASS"}), \
+                contextlib.redirect_stdout(io.StringIO()):
+            evidence = Path(directory) / "artifacts/run-42/test-evidence-42-1"
+            evidence.mkdir(parents=True)
+            (evidence / "test-summary.json").write_text(json.dumps({
+                "result": "Passed", "failedTests": 0, "skippedTests": 0, "passedTests": 4}))
+            (evidence / "test.log").write_text(
+                "Test Suite 'CounterStoreTests' passed\nTest Suite 'FactoryHelloUITests' passed\n")
+            state = {"request_id": "repair-test"}
+            self.assertFalse(factory.fetch(state, "42", "a" * 40, "1.0.1"))
+            self.assertTrue(factory.fetch(state, "42", "a" * 40, "1.0.1"))
+            self.assertEqual(state["phase"], "IPA_READY")
+            self.assertEqual(state["conclusion"], "success")
+            failure = next(entry for entry in state["history"] if entry["phase"] == "FAILED")
+            self.assertEqual(failure["conclusion"], "failure")
+            self.assertIn("failure_evidence", failure)
 
     def test_device_version_and_data_must_match(self):
         state = {"artifact": {"version": "1.0.1"}}
