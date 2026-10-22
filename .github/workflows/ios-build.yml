@@ -1,0 +1,80 @@
+name: iOS build
+on:
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: ios-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  build:
+    runs-on: macos-15
+    timeout-minutes: 30
+    env:
+      DEVELOPER_DIR: /Applications/Xcode_16.4.app/Contents/Developer
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          persist-credentials: false
+      - name: Record environment and generate project
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p build/evidence
+          test -d "$DEVELOPER_DIR"
+          xcodebuild -version | tee build/evidence/xcode.txt
+          xcodebuild -showsdks > build/evidence/sdks.txt
+          xcrun simctl list --json > build/evidence/simulators.json
+          printf '%s\n' "${ImageOS:-unknown} ${ImageVersion:-unknown}" > build/evidence/runner.txt
+          if ! command -v xcodegen >/dev/null; then brew install xcodegen; fi
+          xcodegen --version | tee build/evidence/xcodegen.txt
+          xcodegen generate --spec apps/hello-iphone/project.yml
+      - name: Run unit and UI tests
+        shell: bash
+        run: |
+          set -euo pipefail
+          xcodebuild test \
+            -project apps/hello-iphone/FactoryHello.xcodeproj \
+            -scheme FactoryHello \
+            -destination 'platform=iOS Simulator,name=iPhone 16,OS=18.5' \
+            -parallel-testing-enabled NO \
+            -resultBundlePath build/evidence/Tests.xcresult \
+            CODE_SIGNING_ALLOWED=NO | tee build/evidence/test.log
+          xcrun xcresulttool get test-results summary \
+            --path build/evidence/Tests.xcresult > build/evidence/test-summary.json
+          python3 scripts/check-test-results.py
+      - name: Archive unsigned device app
+        shell: bash
+        run: |
+          set -euo pipefail
+          xcodebuild archive \
+            -project apps/hello-iphone/FactoryHello.xcodeproj \
+            -scheme FactoryHello -configuration Release \
+            -destination 'generic/platform=iOS' \
+            -archivePath build/FactoryHello.xcarchive \
+            CURRENT_PROJECT_VERSION="$GITHUB_RUN_NUMBER" \
+            CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO CODE_SIGN_IDENTITY='' \
+            | tee build/evidence/archive.log
+          python3 scripts/package-ipa.py
+      - name: Preserve test evidence even on failure
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: test-evidence-${{ github.run_id }}-${{ github.run_attempt }}
+          path: build/evidence/
+          if-no-files-found: error
+          retention-days: 7
+      - name: Upload unsigned IPA and manifest
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: unsigned-ipa-${{ github.run_id }}-${{ github.run_attempt }}
+          path: build/release/
+          if-no-files-found: error
+          retention-days: 7
+      - name: Upload symbols
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: symbols-${{ github.run_id }}-${{ github.run_attempt }}
+          path: build/FactoryHello.xcarchive/dSYMs/
+          if-no-files-found: error
+          retention-days: 7
