@@ -22,6 +22,10 @@ Windows 上由 Codex 維護原生 SwiftUI App；GitHub Actions 標準 macOS runn
 
 Windows 的專案專用 gh：`.tools/gh/bin/gh.exe`。以 `scripts/github.ps1` 呼叫，使用忽略的 `local-output/gh-config`；帳號授權由本人在 GitHub 官方瀏覽器頁完成。工具不修改全域 PATH 或 Git 設定。
 
+為縮短首次手機接線，已預先準備更新驗收版 1.0.1 (build 2)：來源 `aab178cc6a4cdb2d4e5cd351ca255f4553cd6621`、[run 39768880907](https://github.com/Jupiter705/iphone-ai-app-factory/actions/runs/39768880907)。同樣 4 項測試 PASS、0 failed/skipped，裝置 IPA 已下載校驗。檔案 `FactoryHello-1.0.1-2-unsigned.ipa`，SHA-256 `5218026c005f71c38121aadeb6aba87d4ed98c975bdbdbd8ed3a41615b32f715`。這版只改副標題與版號，保留 Bundle ID 和儲存 key，實機覆蓋與資料保留仍待驗證。
+
+本地工作區、來源、產物與安裝包使用 D 槽。可選安裝位置的軟體優先 D 槽；Windows 管理的驅動、Apple 共用元件與 Installer cache 維持官方支援位置，不用直接搬資料夾或 junction 取代正式安裝。
+
 ## 實機與維運
 
 手機先不用接電腦。等 IPA 已測試校驗、Sideloadly／Apple 元件準備好，才安排 USB 首次信任、安裝、啟動及資料保留測試。無人值守安裝、Wi-Fi、免費簽署續期均待獨立驗證。
