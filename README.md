@@ -2,7 +2,7 @@
 
 Windows 上由 Codex 維護原生 SwiftUI App；GitHub Actions 標準 macOS runner 執行 iOS 測試與未簽署 IPA 建置，之後在 Windows 以 Sideloadly 做本機簽署及實機驗收。
 
-目前是初始樣板：公開倉庫與標準 macOS CI 已獲本人授權，首次建置待驗證；尚未產生 IPA、尚未實機驗證。本機不需要 Xcode 或 iOS Simulator。
+首次雲端建置已通過：3 個單元測試與 1 個 UI 測試實際執行成功，已產生並下載校驗裝置用未簽署 IPA。簽署、安裝與實機驗證仍未執行。本機不需要 Xcode 或 iOS Simulator。
 
 ## 第一個 App
 
@@ -10,11 +10,15 @@ Windows 上由 Codex 維護原生 SwiftUI App；GitHub Actions 標準 macOS runn
 
 單元測試驗證初值、遞增與跨 store 重新載入。UI 測試驗證首頁、按鈕、重開資料與橫向操作；只有測試程序可使用專用隔離儲存區，不會清除一般 App 資料。
 
-## 雲端流程（尚待實跑）
+## 雲端流程
 
 公開授權與 GitHub 設定完成後，手動執行 `iOS build` workflow。設定為標準 `macos-15`、Xcode 16.4、iOS 18.5 iPhone 16 Simulator；缺少指定版本時會失敗而非靜默換版。CI 記錄實際 image、Xcode、SDK、XcodeGen 版本。
 
 測試通過才 archive 裝置 arm64 App，封裝 `Payload/FactoryHello.app`、生成 manifest 與 SHA-256，保存測試結果及符號。此 IPA 未簽署，仍須 Sideloadly 相容性實測，不能直接視為可安裝。
+
+首次成功證據：[run 39760776675](https://github.com/Jupiter705/iphone-ai-app-factory/actions/runs/39760776675)，來源 `bc89451aec78c004ac00ceefd15867dd3f7c11ad`。已驗證組合為 Xcode 16.4 (16F6)、XcodeGen 2.46.0、macos15 image 20260907.0337.1、iPhone 16 iOS 18.5 Simulator。共 4 項測試 PASS，0 failed／skipped；UI 測試包括點擊、重開保存與橫向操作。
+
+產物 `FactoryHello-1.0.0-1-unsigned.ipa`；SHA-256 `c54abb3682e9c09d8eaefad8d76e14e47bbdd58bf8012182e869acd4d36ca4e0`。Windows 端已核對 checksum、來源、Payload、Info.plist、版號與 Mach-O iOS device arm64。首次 workflow 無需修正即成功；尚未進行故意破壞編譯的修復回歸測試。Actions 提示舊 Node 20 action 在 runner 上改以 Node 24 執行，本次已成功；後續更新 actions 時須另做回歸。
 
 Windows 的專案專用 gh：`.tools/gh/bin/gh.exe`。以 `scripts/github.ps1` 呼叫，使用忽略的 `local-output/gh-config`；帳號授權由本人在 GitHub 官方瀏覽器頁完成。工具不修改全域 PATH 或 Git 設定。
 
